@@ -91,3 +91,7 @@ N.I.N.A., open Plugins > Shutdown Button, then enable the dockable in Imaging.
 a telescope. First validate all steps with equipment simulators and a mock
 power endpoint. There is no weather/roof interlock, and this is not an
 emergency motor stop.
+
+## GET power-controller calls
+
+REST outlet actions support GET, POST, PUT and PATCH. For a GET action, put the controller command and parameters in the URL (including the query string) and **leave JSON Body empty**. GET can change device state on certain controllers even though HTTP normally defines GET as read-only; use it only for a trusted local device endpoint and do not expose it to caches, crawlers or public networks. GET with a non-empty body is rejected before any power command is sent.
