@@ -11,6 +11,7 @@ namespace NINA.Plugin.ShutdownButton;
 [Export(typeof(NINA.Equipment.Interfaces.ViewModel.IDockableVM))]
 public sealed class ShutdownDockableVM : DockableVM {
     private readonly ShutdownCoordinator coordinator;
+    private readonly ShutdownSettings settings;
     private bool busy;
     private string status = "Ready (REST power-off disabled by default)";
 
@@ -20,14 +21,27 @@ public sealed class ShutdownDockableVM : DockableVM {
         ICameraMediator camera, IFilterWheelMediator filterWheel,
         IFocuserMediator focuser, IRotatorMediator rotator) : base(profile) {
         Title = "Shutdown Telescope";
-        var settings = ShutdownSettings.Load();
+        settings = ShutdownSettings.Load();
         coordinator = new ShutdownCoordinator(new NinaShutdownHardware(
             sequence, telescope, guider, camera, filterWheel, focuser, rotator, settings));
+        SaveSettingsCommand = new NINA.Core.Utility.RelayCommand(_ => SaveSettings(), _ => !Busy);
         ShutdownCommand = new NINA.Core.Utility.RelayCommand(
             _ => _ = ExecuteShutdownAsync(), _ => !Busy);
     }
 
     public ICommand ShutdownCommand { get; }
+    public ICommand SaveSettingsCommand { get; }
+    public EquipmentSelection Selection => settings.Disconnect;
+    public bool RestPowerOffEnabled => settings.EnableRestPowerOff && !settings.DryRun;
+
+    private void SaveSettings() {
+        try {
+            settings.Save();
+            Status = "Equipment selection saved. Power control remains " + (RestPowerOffEnabled ? "ENABLED" : "disabled / dry-run") + ".";
+        } catch {
+            Status = "Failed to save shutdown settings.";
+        }
+    }
 
     public string Status {
         get => status;
