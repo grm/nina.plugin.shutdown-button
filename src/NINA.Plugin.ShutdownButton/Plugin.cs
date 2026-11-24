@@ -5,4 +5,7 @@ using NINA.Plugin.Interfaces;
 namespace NINA.Plugin.ShutdownButton;
 
 [Export(typeof(IPluginManifest))]
-public sealed class Plugin : PluginBase { }
+public sealed class Plugin : PluginBase {
+    [Import]
+    public ShutdownPluginOptions Settings { get; set; } = null!;
+}
