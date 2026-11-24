@@ -17,3 +17,5 @@ jobs:
         run: dotnet restore src/NINA.Plugin.ShutdownButton/NINA.Plugin.ShutdownButton.csproj
       - name: Build
         run: dotnet build src/NINA.Plugin.ShutdownButton/NINA.Plugin.ShutdownButton.csproj -c Release --no-restore
+      - name: Test
+        run: dotnet test tests/NINA.Plugin.ShutdownButton.Tests/NINA.Plugin.ShutdownButton.Tests.csproj -c Release
