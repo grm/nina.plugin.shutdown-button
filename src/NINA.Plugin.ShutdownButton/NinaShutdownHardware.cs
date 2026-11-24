@@ -68,7 +68,7 @@ public sealed class NinaShutdownHardware : IShutdownHardware {
     }
 
     public async Task WarmCameraAsync(CancellationToken ct) {
-        if (camera.GetInfo().Connected && settings.WarmCameraMinutes > 0) {
+        if (settings.Disconnect.Camera && camera.GetInfo().Connected && settings.WarmCameraMinutes > 0) {
             if (!await camera.WarmCamera(TimeSpan.FromMinutes(settings.WarmCameraMinutes), null!, ct))
                 throw new InvalidOperationException("Camera warm-up failed.");
         }
@@ -79,12 +79,13 @@ public sealed class NinaShutdownHardware : IShutdownHardware {
         // Preserve mount connection until parking was positively verified above.
         if (!telescope.GetInfo().Connected || !telescope.GetInfo().AtPark)
             throw new InvalidOperationException("Mount state changed after parking.");
-        if (camera.GetInfo().Connected) await camera.Disconnect();
-        if (filterWheel.GetInfo().Connected) await filterWheel.Disconnect();
-        if (focuser.GetInfo().Connected) await focuser.Disconnect();
-        if (rotator.GetInfo().Connected) await rotator.Disconnect();
-        if (guider.GetInfo().Connected) await guider.Disconnect();
-        await telescope.Disconnect();
+        var selection = settings.Disconnect;
+        if (selection.Camera && camera.GetInfo().Connected) await camera.Disconnect();
+        if (selection.FilterWheel && filterWheel.GetInfo().Connected) await filterWheel.Disconnect();
+        if (selection.Focuser && focuser.GetInfo().Connected) await focuser.Disconnect();
+        if (selection.Rotator && rotator.GetInfo().Connected) await rotator.Disconnect();
+        if (selection.Guider && guider.GetInfo().Connected) await guider.Disconnect();
+        if (selection.Telescope) await telescope.Disconnect();
     }
 
     public async Task PowerOffAsync(CancellationToken ct) {
