@@ -27,8 +27,9 @@ jobs:
           if ($version -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw "Invalid 4-part version: $version" }
           $tag = "v$version"
           "tag=$tag" >> $env:GITHUB_OUTPUT
-          gh release view $tag -R $env:GITHUB_REPOSITORY --json tagName 1>$null 2>$null
-          if ($LASTEXITCODE -eq 0) {
+          $published = @(gh release list -R $env:GITHUB_REPOSITORY --limit 100 --json tagName --jq '.[].tagName')
+          if ($LASTEXITCODE) { throw 'Could not list existing GitHub releases.' }
+          if ($published -contains $tag) {
             "publish=false" >> $env:GITHUB_OUTPUT
             Write-Host "Already published $tag; publication skipped."
           } else {
