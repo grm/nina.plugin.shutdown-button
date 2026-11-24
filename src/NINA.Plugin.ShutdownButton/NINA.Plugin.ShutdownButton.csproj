@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>NINA.Plugin.ShutdownButton</AssemblyName>
+    <RootNamespace>NINA.Plugin.ShutdownButton</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>grm</Authors>
+    <Description>Manually stop a N.I.N.A. sequence and safely shut down equipment.</Description>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NINA.Plugin" Version="3.2.0.9001" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="MinimumApplicationVersion" Value="3.2.0.9001" />
+    <AssemblyMetadata Include="Repository" Value="https://github.com/grm/nina.plugin.shutdown-button" />
+    <AssemblyMetadata Include="Homepage" Value="https://github.com/grm/nina.plugin.shutdown-button" />
+    <AssemblyMetadata Include="License" Value="MIT" />
+    <AssemblyMetadata Include="Tags" Value="shutdown,safety,sequencer" />
+  </ItemGroup>
+</Project>
