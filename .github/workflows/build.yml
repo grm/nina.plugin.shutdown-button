@@ -1,0 +1,44 @@
+name: Build and Package
+on:
+  push:
+    branches: [main, "feat/**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore
+        run: dotnet restore tests/NINA.Plugin.ShutdownButton.Tests/NINA.Plugin.ShutdownButton.Tests.csproj
+      - name: Build
+        run: dotnet build src/NINA.Plugin.ShutdownButton/NINA.Plugin.ShutdownButton.csproj -c Release --no-restore
+      - name: Test
+        run: dotnet test tests/NINA.Plugin.ShutdownButton.Tests/NINA.Plugin.ShutdownButton.Tests.csproj -c Release
+      - name: Package installable plugin
+        shell: pwsh
+        run: |
+          $source = "src/NINA.Plugin.ShutdownButton/bin/Release/net8.0-windows"
+          if (!(Test-Path "$source/NINA.Plugin.ShutdownButton.dll")) { throw "Plugin DLL missing" }
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item "$source/NINA.Plugin.ShutdownButton.dll" package/
+          Copy-Item "README.md" package/
+          Copy-Item "docs/TESTING.md" package/TESTING.md
+          Compress-Archive -Path package/* -DestinationPath "NINA.Plugin.ShutdownButton.zip" -Force
+      - name: Upload installable ZIP and DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: nina-shutdown-button-windows
+          path: |
+            NINA.Plugin.ShutdownButton.zip
+            package/NINA.Plugin.ShutdownButton.dll
+          if-no-files-found: error

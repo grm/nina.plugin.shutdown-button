@@ -1,0 +1,76 @@
+<ResourceDictionary x:Class="NINA.Plugin.ShutdownButton.OptionsResources"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DataTemplate x:Key="OptionsTemplate">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="12" MaxWidth="780">
+          <TextBlock Text="Shutdown Button" FontWeight="Bold" FontSize="16"/>
+          <TextBlock Text="Stop and park are mandatory. Select what N.I.N.A. disconnects, separately from the physical power outlets." TextWrapping="Wrap" Margin="0,4,0,10"/>
+          <TextBlock Text="Equipment to disconnect" FontWeight="Bold"/>
+          <WrapPanel Margin="0,6,0,12">
+            <CheckBox Content="Camera" IsChecked="{Binding Settings.Camera}" Margin="0,0,16,8"/>
+            <CheckBox Content="Filter wheel" IsChecked="{Binding Settings.FilterWheel}" Margin="0,0,16,8"/>
+            <CheckBox Content="Focuser" IsChecked="{Binding Settings.Focuser}" Margin="0,0,16,8"/>
+            <CheckBox Content="Rotator" IsChecked="{Binding Settings.Rotator}" Margin="0,0,16,8"/>
+            <CheckBox Content="Guider" IsChecked="{Binding Settings.Guider}" Margin="0,0,16,8"/>
+            <CheckBox Content="Telescope" IsChecked="{Binding Settings.Telescope}" Margin="0,0,16,8"/>
+          </WrapPanel>
+          <TextBlock Text="Safety &amp; camera warm-up" FontWeight="Bold"/>
+          <StackPanel Orientation="Horizontal" Margin="0,6,0,6">
+            <TextBlock Text="Warm camera (minutes):" Width="175" VerticalAlignment="Center"/>
+            <TextBox Text="{Binding Settings.WarmCameraMinutes, UpdateSourceTrigger=LostFocus}" Width="80"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+            <TextBlock Text="Stop timeout (seconds):" Width="175" VerticalAlignment="Center"/>
+            <TextBox Text="{Binding Settings.StopTimeoutSeconds, UpdateSourceTrigger=LostFocus}" Width="80"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+            <TextBlock Text="Park timeout (seconds):" Width="175" VerticalAlignment="Center"/>
+            <TextBox Text="{Binding Settings.ParkTimeoutSeconds, UpdateSourceTrigger=LostFocus}" Width="80"/>
+          </StackPanel>
+          <TextBlock Text="Physical power outlets (REST)" FontWeight="Bold" />
+          <CheckBox Content="Dry run: do not send power-off requests" IsChecked="{Binding Settings.DryRun}" Margin="0,7,0,3"/>
+          <CheckBox Content="Enable physical REST power-off" IsChecked="{Binding Settings.EnableRestPowerOff}" Margin="0,0,0,8"/>
+          <TextBlock Text="Power-off requires BOTH Enable and Dry run unchecked. Outputs execute top-to-bottom. Passwords are currently stored locally in plain text; use a dedicated local controller token." TextWrapping="Wrap" Margin="0,0,0,8"/>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="230"/>
+              <ColumnDefinition Width="12"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+              <ListBox ItemsSource="{Binding Settings.PowerOutputs}" SelectedItem="{Binding Settings.SelectedOutput, Mode=TwoWay}" MinHeight="180" MaxHeight="280">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                      <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="0,0,8,0"/>
+                      <TextBlock Text="{Binding Name}"/>
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <Button Content="Add output" Command="{Binding Settings.AddOutputCommand}" Padding="10,4" Margin="0,0,6,0"/>
+                <Button Content="Remove" Command="{Binding Settings.RemoveOutputCommand}" Padding="10,4"/>
+              </StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="2" DataContext="{Binding Settings.SelectedOutput}">
+              <TextBlock Text="Selected outlet" FontWeight="SemiBold" Margin="0,0,0,8"/>
+              <TextBlock Text="Name"/>
+              <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,7"/>
+              <TextBlock Text="HTTP URL"/>
+              <TextBox Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,7"/>
+              <TextBlock Text="Method: POST / PUT / PATCH"/>
+              <TextBox Text="{Binding Method, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,7"/>
+              <TextBlock Text="Authorization header (optional)"/>
+              <TextBox Text="{Binding AuthorizationHeader, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,7"/>
+              <TextBlock Text="JSON body (optional)"/>
+              <TextBox Text="{Binding Body, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="65" Margin="0,3,0,7"/>
+            </StackPanel>
+          </Grid>
+          <Button Content="Save shutdown configuration" Command="{Binding Settings.SaveCommand}" HorizontalAlignment="Left" Padding="14,6" Margin="0,16,0,6"/>
+          <TextBlock Text="{Binding Settings.Status}" TextWrapping="Wrap"/>
+        </StackPanel>
+      </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

@@ -53,3 +53,41 @@ Stop must occur before shutdown. Never rely on the N.I.N.A. Sequence End actions
 ## Next development step
 
 Verify the exact N.I.N.A. SDK stop/cancellation interface and compile a real plugin against a pinned N.I.N.A. release, with Windows CI. No release before simulated fault tests and controlled hardware validation.
+
+## Configure inside N.I.N.A.
+
+Open **Options > Plugins > Shutdown Button** (the N.I.N.A. plugin options page).
+Choose which devices N.I.N.A. disconnects. This is not the same as cutting
+power to physical outlets.
+
+Under **Physical power outlets**, add one entry per power controller output:
+give it a name, toggle Enabled, enter the HTTP URL, method (POST, PUT or PATCH),
+optional Authorization header and JSON body. The list executes in order. Select
+an outlet and click Remove to remove it. Click **Save shutdown configuration**.
+Changes only apply to later shutdown runs, not an in-flight operation.
+
+For safety, **Dry run** is checked and **Enable physical REST power-off** is
+unchecked on first installation. To enable real switching both settings must be
+explicitly changed and saved. The saved file is local:
+`%LOCALAPPDATA%\\NINA\\ShutdownButton\\settings.json`. Its optional Authorization
+headers are stored in plain text: use a dedicated low-privilege token, localhost
+or a protected private network, and restrict file access. Do not expose the
+controller over the internet.
+
+The **Imaging > Shutdown Telescope** dockable deliberately contains only the
+button, confirmation and status; equipment and REST settings live in Options.
+The workflow always stops the sequencer, stops guiding and parks the mount before
+the optional disconnections/power commands.
+
+## CI builds / installation
+
+Every change is built and tested by GitHub Actions on Windows. After a
+successful run, download the **nina-shutdown-button-windows** artifact, extract
+`NINA.Plugin.ShutdownButton.dll`, and install it using N.I.N.A.'s manual
+plugin installation workflow for the supported 3.2 plugin directory. Restart
+N.I.N.A., open Plugins > Shutdown Button, then enable the dockable in Imaging.
+
+**Experimental build:** an automated build and tests do not certify safe use on
+a telescope. First validate all steps with equipment simulators and a mock
+power endpoint. There is no weather/roof interlock, and this is not an
+emergency motor stop.

@@ -1,0 +1,16 @@
+<ResourceDictionary
+    x:Class="NINA.Plugin.ShutdownButton.ShutdownDockableTemplate"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:NINA.Plugin.ShutdownButton">
+    <DataTemplate DataType="{x:Type local:ShutdownDockableVM}">
+        <StackPanel Margin="8">
+            <Button Content="Shutdown Telescope" Command="{Binding ShutdownCommand}"
+                    Padding="12,8" FontWeight="SemiBold"
+                    ToolTip="Stop the sequencer and perform a confirmed shutdown"/>
+            <TextBlock Margin="0,8,0,4" Text="{Binding Status}" TextWrapping="Wrap"/>
+            <TextBlock Text="Configure equipment and REST outlets in Options > Plugins > Shutdown Button."
+                       TextWrapping="Wrap" Opacity="0.65"/>
+        </StackPanel>
+    </DataTemplate>
+</ResourceDictionary>
