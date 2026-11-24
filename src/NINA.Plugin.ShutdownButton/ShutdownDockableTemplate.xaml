@@ -4,12 +4,28 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:NINA.Plugin.ShutdownButton">
     <DataTemplate DataType="{x:Type local:ShutdownDockableVM}">
-        <StackPanel Margin="8">
-            <Button Content="Shutdown Telescope"
-                    Command="{Binding ShutdownCommand}"
-                    Padding="12,8" FontWeight="SemiBold"
-                    ToolTip="Stop the sequencer and perform a confirmed shutdown"/>
-            <TextBlock Margin="0,8,0,0" Text="{Binding Status}" TextWrapping="Wrap"/>
-        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="8">
+                <Button Content="Shutdown Telescope"
+                        Command="{Binding ShutdownCommand}"
+                        Padding="12,8" FontWeight="SemiBold"
+                        ToolTip="Stop the sequencer and perform confirmed shutdown"/>
+                <TextBlock Margin="0,8,0,12" Text="{Binding Status}" TextWrapping="Wrap"/>
+                <Expander Header="Equipment to disconnect" IsExpanded="False">
+                    <StackPanel Margin="8">
+                        <CheckBox Content="Camera" IsChecked="{Binding Selection.Camera}" />
+                        <CheckBox Content="Filter wheel" IsChecked="{Binding Selection.FilterWheel}" />
+                        <CheckBox Content="Focuser" IsChecked="{Binding Selection.Focuser}" />
+                        <CheckBox Content="Rotator" IsChecked="{Binding Selection.Rotator}" />
+                        <CheckBox Content="Guider" IsChecked="{Binding Selection.Guider}" />
+                        <CheckBox Content="Telescope (after parking)" IsChecked="{Binding Selection.Telescope}" />
+                        <Button Content="Save selection" Command="{Binding SaveSettingsCommand}"
+                                Margin="0,8,0,0" Padding="6,4"/>
+                        <TextBlock Text="REST power outputs are separately configured in settings.json."
+                                   TextWrapping="Wrap" Opacity="0.75" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
     </DataTemplate>
 </ResourceDictionary>
