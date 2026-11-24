@@ -15,3 +15,57 @@ The experimental plugin is NOT validated for unattended operation.
    without controlled, attended tests and an independent safety interlock.
 
 V1 does not close a manual roof, monitor weather, or promise an emergency stop.
+
+## Select equipment / power outlets
+
+The Imaging dockable contains expandable checkboxes for which N.I.N.A. devices
+should **disconnect**: Camera, FilterWheel, Focuser, Rotator, Guider, Telescope.
+Saving writes the choices to `%LOCALAPPDATA%\\NINA\\ShutdownButton\\settings.json`.
+Parking the mount is mandatory regardless of its Disconnect selection. Stop
+sequencer and guiding remain mandatory; the camera warmup follows the camera
+disconnect selection.
+
+**Physical power switching is separate from N.I.N.A. disconnection.**
+A single REST command that cuts a whole power distribution board cannot
+selectively switch off individual outlets. Each independently switchable output
+needs its own defined API request and a clear name.
+
+Example, with intentionally non-routable placeholders:
+```json
+{
+  "DryRun": true,
+  "EnableRestPowerOff": false,
+  "Disconnect": {
+    "Camera": true,
+    "FilterWheel": true,
+    "Focuser": true,
+    "Rotator": false,
+    "Guider": true,
+    "Telescope": true
+  },
+  "PowerOutputs": [
+    {
+      "Name": "Camera 12V",
+      "Enabled": true,
+      "Url": "http://192.0.2.1/api/outlet/camera/off",
+      "Method": "POST"
+    },
+    {
+      "Name": "Mount 48V",
+      "Enabled": false,
+      "Url": "http://192.0.2.1/api/outlet/mount/off",
+      "Method": "POST"
+    }
+  ]
+}
+```
+
+REST outlets are executed in configured list order, only if both
+`DryRun = false` and `EnableRestPowerOff = true`.
+A selected outlet must have a name and a valid HTTP endpoint and method.
+No blanket fallback to the legacy `RestUrl`. Configuring REST outputs is
+currently JSON-only; a graphical outlet editor remains future work.
+
+Do **not** put the power controller itself or safety interlock on an outlet
+being cut before all off commands complete. A REST endpoint cannot verify
+that the hardware actually switched off without a corresponding readback.
