@@ -1,0 +1,127 @@
+name: Publish N.I.N.A. plugin
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: official-plugin-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Resolve version and check release uniqueness
+        id: version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          $version = (& dotnet msbuild src/NINA.Plugin.ShutdownButton/NINA.Plugin.ShutdownButton.csproj -getProperty:FileVersion).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw "Invalid 4-part version: $version" }
+          $tag = "v$version"
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          gh release view $tag -R $env:GITHUB_REPOSITORY --json tagName 1>$null 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            "publish=false" >> $env:GITHUB_OUTPUT
+            Write-Host "Already published $tag; publication skipped."
+          } else {
+            "publish=true" >> $env:GITHUB_OUTPUT
+          }
+      - name: Compile, test and create release assets
+        if: steps.version.outputs.publish == 'true'
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: ./build/Make-Release.ps1 -Repository $env:GITHUB_REPOSITORY -Tag $env:RELEASE_TAG
+      - name: Validate manifest schema and official catalogue
+        if: steps.version.outputs.publish == 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          git clone --depth 1 https://github.com/isbeorn/nina.plugin.manifests.git official-catalogue
+          if ($LASTEXITCODE) { throw 'Cannot retrieve official N.I.N.A. catalogue' }
+          $manifests=@(Get-ChildItem dist -Filter *.manifest.json)
+          if ($manifests.Count -ne 1) { throw 'Expected exactly one versioned manifest' }
+          $json=Get-Content $manifests[0].FullName -Raw
+          if (!(Test-Json -Json $json -SchemaFile official-catalogue/manifest.schema.json)) { throw 'N.I.N.A. schema validation failed' }
+          $dest='official-catalogue/manifests/s/Shutdown Button/3.0.0'
+          New-Item -ItemType Directory -Force $dest | Out-Null
+          $m=$json | ConvertFrom-Json
+          $v="$($m.Version.Major).$($m.Version.Minor).$($m.Version.Patch).$($m.Version.Build)"
+          Copy-Item $manifests[0].FullName (Join-Path $dest "manifest.$v.json")
+          Push-Location official-catalogue
+          try {
+            npm install
+            if ($LASTEXITCODE) { throw 'npm install failed' }
+            node gather.js
+            if ($LASTEXITCODE) { throw 'N.I.N.A. catalogue gather.js failed' }
+          } finally { Pop-Location }
+      - name: Publish GitHub release with ZIP and manifest
+        if: steps.version.outputs.publish == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create $env:RELEASE_TAG dist/*.zip dist/*.manifest.json --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title $env:RELEASE_TAG --notes "N.I.N.A. Shutdown Button. Verified Windows build and manifest. REST power-off is disabled by default; test hardware operation under supervision."
+          if ($LASTEXITCODE) { throw 'GitHub release publication failed' }
+          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json assets --jq '.assets[].name'
+          if ($LASTEXITCODE) { throw 'Release asset verification failed' }
+      - name: Propose official catalogue pull request
+        if: steps.version.outputs.publish == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.NINA_MANIFEST_PAT }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $ErrorActionPreference='Stop'
+          if (!$env:GH_TOKEN) {
+            Write-Warning 'NINA_MANIFEST_PAT absent: release published, catalogue proposal skipped. Configure repository secret for future automated proposals.'
+            exit 0
+          }
+          $upstream='isbeorn/nina.plugin.manifests'
+          $owner=(gh api user --jq '.login').Trim()
+          if ($LASTEXITCODE -or !$owner) { throw 'Manifest PAT cannot authenticate' }
+          $fork="$owner/nina.plugin.manifests"
+          gh repo view $fork --json name -q .name 1>$null 2>$null
+          if ($LASTEXITCODE) {
+            gh repo fork $upstream --clone=false
+            if ($LASTEXITCODE) { throw 'Cannot create official catalogue fork' }
+          }
+          $branch="shutdown-button-$env:RELEASE_TAG"
+          gh pr list -R $upstream --state all --head "$($owner):$branch" --json number --jq '.[0].number' | Out-String | ForEach-Object { $existing=$_.Trim() }
+          if ($existing) { Write-Host "Catalogue PR #$existing already exists"; exit 0 }
+          git clone --depth 1 https://github.com/isbeorn/nina.plugin.manifests.git catalogue
+          if ($LASTEXITCODE) { throw 'Could not clone official catalogue' }
+          Push-Location catalogue
+          try {
+            git checkout -b $branch
+            $manifest=@(Get-ChildItem ../dist -Filter '*.manifest.json')
+            if ($manifest.Count -ne 1) { throw 'Missing local release manifest' }
+            $destination='manifests/s/Shutdown Button/3.0.0'
+            New-Item -ItemType Directory -Force $destination | Out-Null
+            $ver=$env:RELEASE_TAG.Substring(1)
+            Copy-Item $manifest[0].FullName (Join-Path $destination "manifest.$ver.json")
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -- $destination
+            git diff --cached --quiet
+            if ($LASTEXITCODE -eq 0) { Write-Host 'Manifest already present upstream'; exit 0 }
+            git commit -m "Add Shutdown Button $ver"
+            if ($LASTEXITCODE) { throw 'Manifest commit failed' }
+            gh auth setup-git
+            if ($LASTEXITCODE) { throw 'Cannot configure auth for catalogue fork' }
+            git remote add fork "https://github.com/$fork.git"
+            git push fork "HEAD:refs/heads/$branch"
+            if ($LASTEXITCODE) { throw 'Cannot push catalogue fork branch' }
+          } finally { Pop-Location }
+          gh pr create -R $upstream --base main --head "$($owner):$branch" --title "Add Shutdown Button $env:RELEASE_TAG" --body "Verified N.I.N.A. Shutdown Button release archive, SHA256 and official schema/gather.js validation. REST power-off disabled by default."
+          if ($LASTEXITCODE) { throw 'Catalogue PR creation failed' }
