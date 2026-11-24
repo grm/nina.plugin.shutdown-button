@@ -24,6 +24,16 @@ jobs:
         run: dotnet build src/NINA.Plugin.ShutdownButton/NINA.Plugin.ShutdownButton.csproj -c Release --no-restore
       - name: Test
         run: dotnet test tests/NINA.Plugin.ShutdownButton.Tests/NINA.Plugin.ShutdownButton.Tests.csproj -c Release
+      - name: Validate N.I.N.A. catalogue release packaging
+        if: hashFiles('build/Make-Release.ps1') != ''
+        shell: pwsh
+        run: |
+          ./build/Make-Release.ps1 -Repository $env:GITHUB_REPOSITORY -Tag v0.1.0.0
+          if ($LASTEXITCODE) { throw 'Catalogue release packaging failed' }
+          $manifest = @(Get-ChildItem dist -Filter '*.manifest.json')
+          if ($manifest.Count -ne 1) { throw 'Missing catalogue manifest' }
+          $data = Get-Content $manifest[0].FullName -Raw | ConvertFrom-Json
+          if ($data.Installer.Checksum -ne (Get-FileHash dist/*.zip -Algorithm SHA256).Hash) { throw 'Manifest checksum mismatch' }
       - name: Package installable plugin
         shell: pwsh
         run: |
