@@ -26,8 +26,10 @@ public sealed class RestPowerController {
                 || !Uri.TryCreate(action.Url, UriKind.Absolute, out var uri)
                 || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
                 throw new InvalidOperationException("An enabled power output has missing name or invalid URL.");
-            if (!new[] { "POST", "PUT", "PATCH" }.Contains(action.Method.ToUpperInvariant()))
+            if (!new[] { "GET", "POST", "PUT", "PATCH" }.Contains(action.Method.ToUpperInvariant()))
                 throw new InvalidOperationException($"Output '{action.Name}' uses an unsupported HTTP method.");
+            if (string.Equals(action.Method, "GET", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(action.Body))
+                throw new InvalidOperationException($"GET output '{action.Name}' cannot include a body.");
             requests.Add((action, uri));
         }
 
@@ -39,7 +41,7 @@ public sealed class RestPowerController {
                 if (!request.Headers.TryAddWithoutValidation("Authorization", action.AuthorizationHeader))
                     throw new InvalidOperationException($"Invalid Authorization header for '{action.Name}'.");
             }
-            if (action.Body is not null)
+            if (!string.IsNullOrWhiteSpace(action.Body) && !string.Equals(action.Method, "GET", StringComparison.OrdinalIgnoreCase))
                 request.Content = new StringContent(action.Body, Encoding.UTF8, "application/json");
             try {
                 using var response = await http.SendAsync(request, ct);
