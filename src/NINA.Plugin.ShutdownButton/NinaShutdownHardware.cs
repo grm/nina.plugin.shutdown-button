@@ -90,8 +90,12 @@ public sealed class NinaShutdownHardware : IShutdownHardware {
 
     public async Task PowerOffAsync(CancellationToken ct) {
         ct.ThrowIfCancellationRequested();
-        // This is a post-disconnect invariant: true only if the mount was verified
-        // before DisconnectAsync; never infer it from disconnected state.
+        // A new sequencing run must not be allowed to race against power removal.
+        // We cannot prevent N.I.N.A.'s own Start button; fail closed if it was used.
+        if (sequence.IsAdvancedSequenceRunning())
+            throw new InvalidOperationException("Sequencer was restarted; REST power-off blocked.");
+        // Parking was positively checked before disconnect; never infer parking
+        // from a disconnected mount.
         await new RestPowerController(settings).ExecuteAsync(ct);
     }
 }
