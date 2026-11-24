@@ -60,11 +60,11 @@
               <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,7"/>
               <TextBlock Text="HTTP URL"/>
               <TextBox Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,7"/>
-              <TextBlock Text="Method: POST / PUT / PATCH"/>
+              <TextBlock Text="Method: GET / POST / PUT / PATCH"/>
               <TextBox Text="{Binding Method, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,7"/>
               <TextBlock Text="Authorization header (optional)"/>
               <TextBox Text="{Binding AuthorizationHeader, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,7"/>
-              <TextBlock Text="JSON body (optional)"/>
+              <TextBlock Text="JSON body (optional; leave empty for GET)"/>
               <TextBox Text="{Binding Body, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="65" Margin="0,3,0,7"/>
             </StackPanel>
           </Grid>

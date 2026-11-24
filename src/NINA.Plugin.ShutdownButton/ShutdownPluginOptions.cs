@@ -77,9 +77,11 @@ public sealed class ShutdownPluginOptions : BaseINPC {
                 if (!Uri.TryCreate(row.Url, UriKind.Absolute, out var uri) ||
                     (uri.Scheme != "http" && uri.Scheme != "https"))
                     throw new InvalidOperationException("Enabled outputs require a valid HTTP URL.");
-                if (!new[] { "POST", "PUT", "PATCH" }.Contains(row.Method.ToUpperInvariant()))
-                    throw new InvalidOperationException("Use POST, PUT or PATCH for power-off.");
+                if (!new[] { "GET", "POST", "PUT", "PATCH" }.Contains(row.Method.ToUpperInvariant()))
+                    throw new InvalidOperationException("Use GET, POST, PUT or PATCH for power-off.");
             }
+            if (rows.Any(x => x.Enabled && string.Equals(x.Method, "GET", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(x.Body)))
+                throw new InvalidOperationException("GET actions cannot have a JSON body; put parameters in the URL.");
             stored.PowerOutputs = rows;
             stored.Save();
             Status = "Configuration saved. " + (stored.DryRun ? "REST DRY RUN" :
